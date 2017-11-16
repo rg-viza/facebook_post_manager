@@ -1,0 +1,24 @@
+<?php
+/**
+* @file
+* Module for posting to facebook groups.
+*/
+
+/**
+ * Implements hook_block_access().
+ */
+/**
+ * Implements hook_block_access().
+ */
+
+
+function facebook_post_manager_node_update($node){
+    echo "<xmp>";
+    print_r($node);
+    echo "</xmp>";
+    exit;
+}
+function post_to_group($node_id, $group_id){}
+function delete_from_group($node_id, $group_id){}
+function post_to_groups($node_id){}
+function delete_from_groups($node_id){}

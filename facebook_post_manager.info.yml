@@ -1,0 +1,7 @@
+name: Facebook Post Manager
+type: module
+description: 'Allows for the posting and management of posts to facebook groups'
+core: 8.x
+version: 0.5b
+package: Facebook
+configure: facebook_post_manager.admin_settings
