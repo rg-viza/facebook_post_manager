@@ -3,22 +3,77 @@
 * @file
 * Module for posting to facebook groups.
 */
+use  \Drupal\node\Entity\Node;
+use Drupal\Core\Config\Config;
 
 /**
- * Implements hook_block_access().
- */
-/**
- * Implements hook_block_access().
+ * @param Node
  */
 
-
-function facebook_post_manager_node_update($node){
-    echo "<xmp>";
-    print_r($node);
-    echo "</xmp>";
-    exit;
+function facebook_post_manager_node_update(Node $node)
+{
+  if($node->getType() == 'jewelry_item')
+  {
+    $old_post_to_facebook = $node->original->get('field_publish_to_facebook')->getValue()[0]['value'];
+    $post_to_facebook = $node->get('field_publish_to_facebook')->getValue()[0]['value'];
+    if($old_post_to_facebook != $post_to_facebook)
+    {
+      if(!empty($post_to_facebook))
+      {
+        echo "Posting item to facebook...";
+        post_to_groups($node);
+        exit;
+      }
+      elseif(empty($post_to_facebook))
+      {
+        echo "Deleting item posts from facebook...";
+        delete_from_groups($node);
+        exit;
+      }
+    }
+    else
+    {
+      echo "Not changing facebook posts.";
+      exit;
+    }
+  }
 }
-function post_to_group($node_id, $group_id){}
-function delete_from_group($node_id, $group_id){}
-function post_to_groups($node_id){}
-function delete_from_groups($node_id){}
+
+function post_to_group($post_body, $post_title, $group_id)
+{
+  $post_id = NULL;
+
+  return $post_id;
+}
+
+function delete_from_group($postId)
+{
+  $post_id = false;
+
+  return $post_id;
+}
+
+function post_to_groups(&$node)
+{
+  $arrPostIds = [];
+  $config = \Drupal::config('facebook_post_manager.settings');
+  $arrGroupIds = explode("\n", $config->get('facebook_groups'));
+  foreach($arrGroupIds as $group_id)
+  {
+    $arrPostIds[] = post_to_group($node, $group_id);
+  }
+  $node->set('field_facebook_posting_ids',$arrPostIds);
+}
+function delete_from_groups(&$node)
+{
+  $arrPostIdDeleteResults = [];
+  $arrPostIds =  $node->get('field_facebook_posting_ids')->getValue();
+  foreach($arrPostIds as $postId)
+  {
+    if(delete_from_group($postId) === false)
+    {
+      $arrPostIdDeleteFailResults[] = $postId;
+    }
+  }
+  $node->set('field_facebook_posting_ids',$arrPostIdDeleteFailResults);
+}
