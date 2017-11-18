@@ -28,7 +28,6 @@ function facebook_post_manager_node_update(Node $node)
       {
         echo "Deleting item posts from facebook...";
         delete_from_groups($node);
-        exit;
       }
     }
     else
@@ -39,9 +38,9 @@ function facebook_post_manager_node_update(Node $node)
   }
 }
 
-function post_to_group($post_body, $post_title, $group_id)
+function post_to_group(&$node, $group_id)
 {
-  $post_id = NULL;
+  $post_id = false;
 
   return $post_id;
 }
