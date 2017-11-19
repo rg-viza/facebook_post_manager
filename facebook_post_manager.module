@@ -4,52 +4,69 @@
 * Module for posting to facebook groups.
 */
 use  \Drupal\node\Entity\Node;
+use Drupal\Core;
 use Drupal\Core\Config\Config;
-
+use Symfony\Component\HttpFoundation\RedirectResponse;
+use Drupal\facebook_post_manager\Repository\FacebookRepository;
 /**
  * @param Node
  */
-
-function facebook_post_manager_node_update(Node $node)
-{
-  if($node->getType() == 'jewelry_item')
-  {
-    $old_post_to_facebook = $node->original->get('field_publish_to_facebook')->getValue()[0]['value'];
-    $post_to_facebook = $node->get('field_publish_to_facebook')->getValue()[0]['value'];
-    if($old_post_to_facebook != $post_to_facebook)
+function facebook_post_manager_node_presave(Drupal\node\NodeInterface $node) {
+  if ($node->getType() == 'jewelry_item') {
+    $lltoken = \Drupal::service('user.private_tempstore')
+      ->get('facebook_post_manager')
+      ->get('lltoken');
+    if (empty($lltoken))
     {
-      if(!empty($post_to_facebook))
-      {
-        echo "Posting item to facebook...";
-        post_to_groups($node);
-        exit;
-      }
-      elseif(empty($post_to_facebook))
-      {
-        echo "Deleting item posts from facebook...";
-        delete_from_groups($node);
-      }
+      $url = '/facebook/post/manager/initialize/' . $node->id();
+      $response = new RedirectResponse($url);
+      $response->send();
+      return;
     }
     else
     {
-      echo "Not changing facebook posts.";
-      exit;
+      if (!empty($node->original)) {
+        $old_post_to_facebook = $node->original->get('field_publish_to_facebook')
+          ->getValue()[0]['value'];
+        $post_to_facebook = $node->get('field_publish_to_facebook')
+          ->getValue()[0]['value'];
+        if ($old_post_to_facebook != $post_to_facebook) {
+          if (!empty($post_to_facebook)) {
+            //echo "Posting item to facebook...";
+            $post_ids = post_to_groups($node);
+            $node->get('field_facebook_posting_ids')->setValue($post_ids);
+          }
+          elseif (empty($post_to_facebook)) {
+            //echo "Deleting item posts from facebook...";
+            $fail_ids = delete_from_groups($node);
+            $node->get('field_facebook_posting_ids')->setValue($fail_ids);
+          }
+        }
+      }
     }
   }
+  return;
 }
 
 function post_to_group(&$node, $group_id)
 {
   $post_id = false;
-
-  return $post_id;
+  $repo = new FacebookRepository();
+  $lltoken = \Drupal::service('user.private_tempstore')->get('facebook_post_manager')->get('lltoken');
+  $repo->setToken($lltoken);
+  $post_id = $repo->post($node, $group_id);
+  $arrResponse = $post_id->getDecodedBody();
+  return $arrResponse['id'];
 }
 
-function delete_from_group($postId)
+function delete_from_group($post_id)
 {
-  $post_id = false;
-
-  return $post_id;
+  $repo = new FacebookRepository();
+  $lltoken = \Drupal::service('user.private_tempstore')->get('facebook_post_manager')->get('lltoken');
+  $repo->setToken($lltoken);
+  $response = $repo->delete($post_id);
+  $arrResponse = $response->getDecodedBody();
+  return $arrResponse['success'];
 }
 
 function post_to_groups(&$node)
@@ -59,20 +76,22 @@ function post_to_groups(&$node)
   $arrGroupIds = explode("\n", $config->get('facebook_groups'));
   foreach($arrGroupIds as $group_id)
   {
-    $arrPostIds[] = post_to_group($node, $group_id);
+    $post_id = post_to_group($node, $group_id);
+    $arrPostIds[] = $post_id;
   }
-  $node->set('field_facebook_posting_ids',$arrPostIds);
+  return implode("|",$arrPostIds);
 }
 function delete_from_groups(&$node)
 {
-  $arrPostIdDeleteResults = [];
-  $arrPostIds =  $node->get('field_facebook_posting_ids')->getValue();
-  foreach($arrPostIds as $postId)
-  {
-    if(delete_from_group($postId) === false)
+  $arrPostIdDeleteFailResults = [];
+  $post_ids =  $node->get('field_facebook_posting_ids')->getValue()[0]['value'];
+  $arrPostIds = explode("|",$post_ids);
+  foreach($arrPostIds as $postId) {
+    $result = delete_from_group($postId);
+    if ($result != 1)
     {
       $arrPostIdDeleteFailResults[] = $postId;
     }
   }
-  $node->set('field_facebook_posting_ids',$arrPostIdDeleteFailResults);
+  return implode("|",$arrPostIdDeleteFailResults);
 }

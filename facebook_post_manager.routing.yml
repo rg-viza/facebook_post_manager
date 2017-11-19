@@ -5,3 +5,28 @@ facebook_post_manager.admin_settings:
     _title: 'Facebook Post Manager Settings Form'
   requirements:
     _permission: 'administer site configuration'
+facebook_post_manager.post:
+  path: '/facebook/post/manager/post'
+  defaults:
+    _controller: '\Drupal\facebook_post_manager\Controller\FacebookPostManager::post'
+  requirements:
+    _permission: 'administer site configuration'
+facebook_post_manager.callback:
+  path: '/facebook/post/manager/callback'
+  defaults:
+    _controller: '\Drupal\facebook_post_manager\Controller\FacebookPostManager::callback'
+  requirements:
+    _permission: 'administer site configuration'
+facebook_post_manager.delete:
+  path: '/facebook/post/manager/delete'
+  defaults:
+    _controller: '\Drupal\facebook_post_manager\Controller\FacebookPostManager::delete'
+  requirements:
+    _permission: 'administer site configuration'
+facebook_post_manager.initialize:
+  path: '/facebook/post/manager/initialize/{node_id}'
+  defaults:
+    _controller: '\Drupal\facebook_post_manager\Controller\FacebookPostManager::initialize'
+  requirements:
+    _permission: 'administer site configuration'
+    node_id: '^[a-zA-Z0-9_]+'
