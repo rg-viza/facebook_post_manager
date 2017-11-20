@@ -55,17 +55,35 @@ class FacebookRepository implements FacebookRepositoryInterface
     return '<a href="' . $loginUrl . '">Log in with Facebook</a>';
   }
 
-  public function post($node, $group_id)
+  protected function upload_images(Node &$node)
   {
 
+  }
+
+  public function post(Node &$node, $group_id)
+  {
     $group = trim($group_id);
-
     $body = $node->get('body')->getValue()[0]['value'];
+    if(!empty($node->field_image))
+    {
+      $this->upload_images($node);
+      $url = $node->field_image[0]->entity->url();
+      $arrPost = [
+        'message'=>str_replace('&nbsp;',"\n", strip_tags($body)),
+        'title'=>$node->getTitle(),
+        'picture'=>$url,
+        'link'=>$url,
+      ];
+    }
+    else
+    {
+      $arrPost = [
+        'message'=>str_replace('&nbsp;',"\n", strip_tags($body)),
+        'title'=>$node->getTitle(),
+      ];
+    }
 
-    return $this->fb->post("/$group/feed",[
-      'message'=>str_replace('&nbsp;',"\n", strip_tags($body)),
-      'title'=>$node->getTitle(),
-    ]);
+    return $this->fb->post("/$group/feed",$arrPost);
   }
 
   public function delete($post_id)
